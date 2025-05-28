@@ -63,6 +63,24 @@ public:
         return vector * (1 / scale);
     }
 
+    double operator[](int index) const {
+        switch (index) {
+            case 0: return x();
+            case 1: return y();
+            case 2: return z();
+            default: throw std::out_of_range("Index out of range for Vector3");
+        }
+    }
+
+    double& operator[](int index) {
+        switch (index) {
+            case 0: return x_;
+            case 1: return y_;
+            case 2: return z_;
+            default: throw std::out_of_range("Index out of range for Vector3");
+        }
+    }
+    
     double dot(const Vector3& other) const {
         return (x() * other.x()) + (y() * other.y()) + (z() * other.z());
     }

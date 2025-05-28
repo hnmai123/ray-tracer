@@ -11,17 +11,19 @@
 #include "Vector3.h"
 #include "Material.h"
 #include "HitRecord.h"
+#include "AABB.h"
 
 class Object
 {
 public:
     virtual std::optional<HitRecord> rayHit(const Ray &ray, Interval rayInterval) const = 0;
+    virtual AABB boundingBox() const = 0;
 };
 
 class Sphere : public Object
 {
 public:
-    Sphere(Point3 centre, double radius, const Material* material) : centre_{centre}, radius_{radius}, material_{material} {}
+    Sphere(Point3 centre, double radius, const Material *material) : centre_{centre}, radius_{radius}, material_{material} {}
     std::optional<HitRecord> rayHit(const Ray &ray, Interval rayInterval) const override
     {
         Vector3 rayToCenter = ray.origin() - centre_;                                     // vector from ray origin to sphere center
@@ -57,8 +59,14 @@ public:
         rec.setSurfaceNormal(normalAtHit);
         rec.setDistanceAlongRay(hitDistance);
         rec.setFrontFace(ray.direction().dot(normalAtHit) < 0); // front face if ray direction and normal are in opposite directions
-        rec.setSurfaceMaterial(material_); // Set the material of the sphere
+        rec.setSurfaceMaterial(material_);                      // Set the material of the sphere
         return rec;
+    }
+    AABB boundingBox() const override
+    {
+        Point3 minPoint = centre_ - Vector3(radius_, radius_, radius_);
+        Point3 maxPoint = centre_ + Vector3(radius_, radius_, radius_);
+        return AABB(minPoint, maxPoint);
     }
 
 private:
@@ -70,7 +78,7 @@ private:
 class Plane : public Object
 {
 public:
-    Plane(Point3 centre, const Material* material) : centre_{centre}, material_{material} {}
+    Plane(Point3 centre, const Material *material) : centre_{centre}, material_{material} {}
     std::optional<HitRecord> rayHit(const Ray &ray, Interval rayInterval) const override
     {
         // Assume the plane normal is (0, 1, 0) (y-up), and centre_ is a point on the plane
@@ -90,8 +98,18 @@ public:
         rec.setSurfaceNormal(planeNormal_);
         rec.setDistanceAlongRay(distanceToPlane);
         rec.setFrontFace(ray.direction().dot(planeNormal_) < 0); // front face if ray direction and normal are in opposite directions
-        rec.setSurfaceMaterial(material_); // Set the material of the plane
+        rec.setSurfaceMaterial(material_);                       // Set the material of the plane
         return rec;
+    }
+    AABB boundingBox() const override
+    {
+        double extent = 1e5; // Large extent for the plane
+        double thickness = 0.001; // Thickness of the plane
+
+        Point3 minPoint = Point3(-extent, centre_.y() - thickness, -extent);
+        Point3 maxPoint = Point3(extent, centre_.y() + thickness, extent);
+
+        return AABB(minPoint, maxPoint);
     }
 
 private:
@@ -136,6 +154,18 @@ public:
         }
 
         return hitAnything ? std::optional<HitRecord>{tempHitRecord} : std::nullopt;
+    }
+    AABB boundingBox() const override
+    {
+        if (objects_.empty())
+            return AABB(); // empty scene
+        AABB boundingBox = objects_[0]->boundingBox();
+
+        for (size_t i = 1; i < objects_.size(); ++i)
+        {
+            boundingBox = surroundingBox(boundingBox, objects_[i]->boundingBox());
+        }
+        return boundingBox;
     }
 
 private:

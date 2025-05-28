@@ -6,6 +6,7 @@
 #include "Ray.h"
 #include "Scene.h"
 #include "Material.h"
+#include "BVHNode.h"
 
 void updateProgressBar(int rowsDone, int imageHeight)
 {
@@ -26,14 +27,14 @@ void updateProgressBar(int rowsDone, int imageHeight)
     std::cout << "] " << percentage << "% \r" << std::flush;
 }
 
-Color3 rayColor(const Ray &ray, const Scene &scene, int depth = 5)
+Color3 rayColor(const Ray &ray, const Object &world, int depth = 5)
 {
     if (depth <= 0)
     {
         return Color3(0, 0, 0); // Ray bounces exhausted
     }
 
-    auto hitRecordOpt = scene.rayHit(ray, Interval(0.001, infinity));
+    auto hitRecordOpt = world.rayHit(ray, Interval(0.001, infinity));
     if (hitRecordOpt)
     {
         const HitRecord &rec = *hitRecordOpt;
@@ -41,7 +42,7 @@ Color3 rayColor(const Ray &ray, const Scene &scene, int depth = 5)
 
         if (auto reflected = material->scatter(ray, rec))
         {
-            Color3 incoming = rayColor(*reflected, scene, depth - 1);
+            Color3 incoming = rayColor(*reflected, world, depth - 1);
             return material->color() * incoming;
         }
         else
@@ -80,16 +81,19 @@ int main()
             << imageWidth << " " << imageHeight << "\n255\n";
 
     // Create materials of diffuse and reflective types
-    const Material *diffuse = new PureDiffuse(Color3(1.0, 0.9, 0.5)); // Light gold color
-    const Material *mirror = new Reflective(Color3(0.1, 0.8, 0.1));   // Green color
+    const Material *diffuse = new PureDiffuse(Color3(0.2, 0.9, 0.9)); // light cyan color
+    const Material *mirror = new Reflective(Color3(0.2, 0.2, 0.4)); // dark blue color
 
-    // Create a scene with a sphere and a plane
-    Scene scene;
-    scene.add(new Sphere(Point3(0, 0, -1), 0.5, diffuse));
-    scene.add(new Plane(Point3(0, -0.5, 0), mirror));
+    // Create objects list for BVH tree
+    std::vector<Object*> objects;
+    objects.push_back(new Sphere(Point3(0, 0, -1), 0.5, diffuse));
+    objects.push_back(new Plane(Point3(0, -0.5, 0), mirror));
+
+    // Build BVH from objects
+    Object* world = new BVHNode(objects, 0, objects.size());
 
     // Render the scene
-    int samplesPerPixel = 50; // Number of samples per pixel
+    int samplesPerPixel = 200; // Number of samples per pixel
 
     for (int j = 0; j < imageHeight; j++)
     {
@@ -102,7 +106,7 @@ int main()
                 auto ray = camera.getRay(i + randomDouble0to1(), j + randomDouble0to1());
 
                 // Accumulate color from the ray
-                pixelColor = pixelColor + rayColor(ray, scene, 10);
+                pixelColor = pixelColor + rayColor(ray, *world, 10);
             }
 
             Color3 finalColor = pixelColor.correctedAverage(samplesPerPixel); // Average color for the pixel
