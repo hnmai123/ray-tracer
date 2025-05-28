@@ -9,34 +9,19 @@
 #include "Interval.h"
 #include "Ray.h"
 #include "Vector3.h"
+#include "Material.h"
+#include "HitRecord.h"
 
-class HitRecord {
+class Object
+{
 public:
-    Point3 hitPoint() const { return hitPoint_; }
-    Vector3 surfaceNormal() const { return surfaceNormal_; }
-    double distanceAlongRay() const { return distanceAlongRay_; }
-    bool frontFace() const { return frontFace_; }
-
-    void setHitPoint(const Point3 &p) { hitPoint_ = p; }
-    void setSurfaceNormal(const Vector3 &n) { surfaceNormal_ = n; }
-    void setDistanceAlongRay(double t) { distanceAlongRay_ = t; }
-    void setFrontFace(bool f) { frontFace_ = f; }
-
-private:
-    Point3 hitPoint_;
-    Vector3 surfaceNormal_;
-    double distanceAlongRay_;
-    bool frontFace_;
-};
-
-class Object {
-public:
-    virtual std::optional<HitRecord> rayHit(const Ray& ray, Interval rayInterval) const = 0;
+    virtual std::optional<HitRecord> rayHit(const Ray &ray, Interval rayInterval) const = 0;
 };
 
 class Sphere : public Object
 {
 public:
+    Sphere(Point3 centre, double radius, const Material* material) : centre_{centre}, radius_{radius}, material_{material} {}
     std::optional<HitRecord> rayHit(const Ray &ray, Interval rayInterval) const override
     {
         Vector3 rayToCenter = ray.origin() - centre_;                                     // vector from ray origin to sphere center
@@ -72,18 +57,20 @@ public:
         rec.setSurfaceNormal(normalAtHit);
         rec.setDistanceAlongRay(hitDistance);
         rec.setFrontFace(ray.direction().dot(normalAtHit) < 0); // front face if ray direction and normal are in opposite directions
+        rec.setSurfaceMaterial(material_); // Set the material of the sphere
         return rec;
     }
 
 private:
     Point3 centre_{0.0, 0.0, -1.0};
     double radius_{0.5};
-    // const Material *material_;
+    const Material *material_;
 };
 
 class Plane : public Object
 {
 public:
+    Plane(Point3 centre, const Material* material) : centre_{centre}, material_{material} {}
     std::optional<HitRecord> rayHit(const Ray &ray, Interval rayInterval) const override
     {
         // Assume the plane normal is (0, 1, 0) (y-up), and centre_ is a point on the plane
@@ -103,37 +90,45 @@ public:
         rec.setSurfaceNormal(planeNormal_);
         rec.setDistanceAlongRay(distanceToPlane);
         rec.setFrontFace(ray.direction().dot(planeNormal_) < 0); // front face if ray direction and normal are in opposite directions
+        rec.setSurfaceMaterial(material_); // Set the material of the plane
         return rec;
     }
 
 private:
     Point3 centre_{0.0, -0.5, 0.0}; // A point on the plane
-    // const Material *material_;
+    const Material *material_;
 };
 
-class Scene : public Object {
+class Scene : public Object
+{
 public:
     Scene() = default;
-    
-    Scene(Object* o) {
+
+    Scene(Object *o)
+    {
         add(o);
     }
 
-    void add(Object* o) {
+    void add(Object *o)
+    {
         objects_.push_back(o);
     }
 
-    void clear() {
+    void clear()
+    {
         objects_.clear();
     }
 
-    std::optional<HitRecord> rayHit(const Ray& ray, Interval rayInterval) const override {
+    std::optional<HitRecord> rayHit(const Ray &ray, Interval rayInterval) const override
+    {
         HitRecord tempHitRecord;
         bool hitAnything = false;
         double closestSoFar = rayInterval.max();
 
-        for (const auto& o : objects_) {
-            if (auto tempHit = o->rayHit(ray, Interval(rayInterval.min(), closestSoFar))) {
+        for (const auto &o : objects_)
+        {
+            if (auto tempHit = o->rayHit(ray, Interval(rayInterval.min(), closestSoFar)))
+            {
                 hitAnything = true;
                 closestSoFar = tempHit->distanceAlongRay();
                 tempHitRecord = *tempHit;
@@ -142,8 +137,9 @@ public:
 
         return hitAnything ? std::optional<HitRecord>{tempHitRecord} : std::nullopt;
     }
+
 private:
-    std::vector<Object*> objects_{};
+    std::vector<Object *> objects_{};
 };
 
-#endif //RAYTRACER_SCENE_H
+#endif // RAYTRACER_SCENE_H
