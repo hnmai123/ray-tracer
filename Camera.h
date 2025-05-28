@@ -18,7 +18,7 @@ public:
         double imageWidth = imageHeight * aspectRatio;
         double viewportWidth = viewportHeight * aspectRatio;
         cameraCentre_ = cameraPosition;
-        auto lookAtVector = cameraPosition - imagePlaneCentre;
+        auto lookAtVector = imagePlaneCentre - cameraPosition;
         auto viewportU = Vector3(viewportWidth, 0.0, 0.0);
         auto viewportV = Vector3(0.0, -viewportHeight, 0.0);
 
