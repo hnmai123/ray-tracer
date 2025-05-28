@@ -49,11 +49,16 @@ public:
             return std::nullopt; // If the ray does not hit the bounding box, return no hit
 
         auto leftHit = left_->rayHit(ray, rayInterval);
-        double rightMax = leftHit ? leftHit->distanceAlongRay() : rayInterval.max(); // If left hit, use its distance, otherwise use the max of the ray interval
-        auto rightHit = right_->rayHit(ray, Interval(rayInterval.min(), rightMax));
-        if (rightHit)
-            return rightHit; // If the right hit is valid, return it
-        return leftHit;      // Otherwise, return the left hit (if it exists)
+        auto rightHit = right_->rayHit(ray, rayInterval);
+        if (leftHit && rightHit) {
+            return (leftHit->distanceAlongRay() < rightHit->distanceAlongRay()) ? leftHit : rightHit;
+        } else if (leftHit) {
+            return leftHit;
+        } else if (rightHit) {
+            return rightHit;
+        } else {
+            return std::nullopt; // No hit in either child
+        }
     };
 
     AABB boundingBox() const override

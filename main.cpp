@@ -83,17 +83,22 @@ int main()
     // Create materials of diffuse and reflective types
     const Material *diffuse = new PureDiffuse(Color3(0.2, 0.9, 0.9)); // light cyan color
     const Material *mirror = new Reflective(Color3(0.2, 0.2, 0.4)); // dark blue color
-
+    const Material *glossy = new Glossy(Color3(0.8, 0.6, 0.2), 0.5); // glossy yellow color
+    
     // Create objects list for BVH tree
     std::vector<Object*> objects;
-    objects.push_back(new Sphere(Point3(0, 0, -1), 0.5, diffuse));
+
+    // Spheres
+    objects.push_back(new Sphere(Point3(0.0, 0, -1.0), 0.5, glossy));    // Glossy center
+    
+    // Ground plane
     objects.push_back(new Plane(Point3(0, -0.5, 0), mirror));
 
     // Build BVH from objects
     Object* world = new BVHNode(objects, 0, objects.size());
 
     // Render the scene
-    int samplesPerPixel = 200; // Number of samples per pixel
+    int samplesPerPixel = 500; // Number of samples per pixel
 
     for (int j = 0; j < imageHeight; j++)
     {
