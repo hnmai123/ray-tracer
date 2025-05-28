@@ -26,7 +26,7 @@ void updateProgressBar(int rowsDone, int imageHeight)
     std::cout << "] " << percentage << "% \r" << std::flush;
 }
 
-Color3 rayColor(const Ray &ray, const Scene &scene, int depth = 10)
+Color3 rayColor(const Ray &ray, const Scene &scene, int depth = 5)
 {
     if (depth <= 0)
     {
@@ -80,23 +80,34 @@ int main()
             << imageWidth << " " << imageHeight << "\n255\n";
 
     // Create materials of diffuse and reflective types
-    const Material *diffuse = new PureDiffuse(Color3(0.95, 0.95, 1.0)); // Light gray color
-    const Material *mirror = new Reflective(Color3(0.5, 0.5, 0.5)); // Medium gray color
-    
+    const Material *diffuse = new PureDiffuse(Color3(1.0, 0.9, 0.5)); // Light gold color
+    const Material *mirror = new Reflective(Color3(0.1, 0.8, 0.1));   // Green color
+
     // Create a scene with a sphere and a plane
     Scene scene;
     scene.add(new Sphere(Point3(0, 0, -1), 0.5, diffuse));
     scene.add(new Plane(Point3(0, -0.5, 0), mirror));
 
+    // Render the scene
+    int samplesPerPixel = 50; // Number of samples per pixel
+
     for (int j = 0; j < imageHeight; j++)
     {
         for (int i = 0; i < imageWidth; i++)
         {
-            auto ray = camera.getRay(i, j);
+            Color3 pixelColor;
+            for (int sample = 0; sample < samplesPerPixel; sample++)
+            {
+                // Get a ray for the current pixel
+                auto ray = camera.getRay(i + randomDouble0to1(), j + randomDouble0to1());
 
-            auto pixelColor = rayColor(ray, scene, 10);
+                // Accumulate color from the ray
+                pixelColor = pixelColor + rayColor(ray, scene, 10);
+            }
 
-            outFile << pixelColor.r() << ' ' << pixelColor.g() << ' ' << pixelColor.b() << '\n';
+            Color3 finalColor = pixelColor.correctedAverage(samplesPerPixel); // Average color for the pixel
+
+            outFile << finalColor.r() << ' ' << finalColor.g() << ' ' << finalColor.b() << '\n';
         }
         updateProgressBar(j, imageHeight);
     }

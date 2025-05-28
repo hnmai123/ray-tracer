@@ -45,6 +45,15 @@ public:
                 (colorVec_.z() + other.colorVec_.z())};
     }
 
+    Color3 correctedAverage(int samplesPerPixel) {
+        double scale = 1.0 / samplesPerPixel;
+        return {
+            sqrt(scale * colorVec_.x()), 
+            sqrt(scale * colorVec_.y()), 
+            sqrt(scale * colorVec_.z())
+        };
+    }
+
 private:
     Vector3 colorVec_{0.0, 0.0, 0.0};
 };
