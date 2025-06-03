@@ -10,7 +10,7 @@ class BVHNode : public Object
 public:
     BVHNode(std::vector<Object *> &objects, size_t start, size_t end)
     {
-        int axis = 0;
+        int axis = randomInt(0, 2); // Randomly choose an axis (0, 1, or 2)
         auto comparator = [axis](Object *objectA, Object *objectB)
         {
             return objectA->boundingBox().min()[axis] < objectB->boundingBox().min()[axis];
@@ -36,11 +36,10 @@ public:
         }
         else
         {
-            std::vector<Object*> sortedObjects(objects.begin() + start, objects.begin() + end);
-            std::sort(sortedObjects.begin(), sortedObjects.end(), comparator);
+            std::sort(objects.begin() + start, objects.begin() + end, comparator);
             size_t mid = start + objectSpan / 2;
-            left_ = new BVHNode(objects, 0, mid);
-            right_ = new BVHNode(objects, mid, sortedObjects.size());
+            left_ = new BVHNode(objects, start, mid);
+            right_ = new BVHNode(objects, mid, end);
         }
         box_ = surroundingBox(left_->boundingBox(), right_->boundingBox());
     };
@@ -51,15 +50,16 @@ public:
 
         auto leftHit = left_->rayHit(ray, rayInterval);
         auto rightHit = right_->rayHit(ray, rayInterval);
-        if (leftHit && rightHit) {
+        if (leftHit && rightHit)
+        {
             return (leftHit->distanceAlongRay() < rightHit->distanceAlongRay()) ? leftHit : rightHit;
-        } else if (leftHit) {
-            return leftHit;
-        } else if (rightHit) {
-            return rightHit;
-        } else {
-            return std::nullopt; // No hit in either child
         }
+        else if (leftHit)
+        {
+            return leftHit;
+        }
+        else
+            return rightHit;
     };
 
     AABB boundingBox() const override

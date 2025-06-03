@@ -13,6 +13,10 @@ public:
     virtual std::optional<Ray> scatter(const Ray &ray, const HitRecord &hitRecord) const = 0;
     virtual Color3 color() const = 0;
     virtual ~Material() = default;
+    virtual Color3 emittedColor() const
+    {
+        return Color3(0, 0, 0); // Default implementation returns no emission
+    }
 };
 
 // --- PureDiffuse (Lambertian) ---
@@ -72,7 +76,7 @@ public:
             glossyDirection = hitRecord.surfaceNormal();
         return Ray(hitRecord.hitPoint(), glossyDirection);
     }
-    Color3 color() const override
+    inline Color3 color() const override
     {
         return albedo_;
     }
@@ -82,4 +86,27 @@ private:
     double glossiness_;
 };
 
+// --- Emissive (Light Source) ---
+class Emissive : public Material
+{
+public:
+    Emissive(Color3 color) : emittedColor_(color) {}
+    inline std::optional<Ray> scatter(const Ray &ray, const HitRecord &hitRecord) const override
+    {
+        return std::nullopt; // Emissive materials do not scatter rays
+    }
+    inline Color3 color() const override
+    {
+        return emittedColor_;
+    }
+    inline Color3 emittedColor() const override
+    {
+        return emittedColor_; // Return the emitted color
+    }
+
+private:
+    Color3 emittedColor_;
+};
+
+// -- Dielectric (Transparent) ---
 #endif // RAYTRACER_MATERIAL_H

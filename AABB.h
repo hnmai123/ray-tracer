@@ -16,6 +16,9 @@ public:
 
     bool hit(const Ray &ray, Interval rayInterval) const
     {
+        double intervalMin = rayInterval.min();
+        double intervalMax = rayInterval.max();
+
         for (int axisIndex = 0; axisIndex < 3; ++axisIndex)
         {
             double inverseDirection = 1.0 / ray.direction()[axisIndex];
@@ -23,8 +26,10 @@ public:
             double tFar = (max_[axisIndex] - ray.origin()[axisIndex]) * inverseDirection;
             if (inverseDirection < 0.0)
                 std::swap(tNear, tFar);
-            double intervalMin = std::max(tNear, intervalMin);
-            double intervalMax = std::min(tFar, intervalMax);
+
+            intervalMin = std::max(tNear, intervalMin);
+            intervalMax = std::min(tFar, intervalMax);
+            
             if (intervalMax <= intervalMin) // No intersection along this axis
                 return false;
         }

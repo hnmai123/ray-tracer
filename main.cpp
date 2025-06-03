@@ -41,15 +41,17 @@ Color3 rayColor(const Ray &ray, const Object &world, int depth = 10)
     {
         const HitRecord &rec = *hitRecordOpt;
         const Material *material = rec.surfaceMaterial();
+        const Color3 emittedColor = material->emittedColor();
 
         if (auto reflected = material->scatter(ray, rec))
         {
-            Color3 attenuation = material->color();
-            return attenuation * rayColor(*reflected, world, depth - 1);
+            Color3 incoming = rayColor(*reflected, world, depth - 1);
+            double cosine = std::max(0.0, rec.surfaceNormal().dot(reflected->direction().unitVector()));
+            return emittedColor + material->color() * incoming * (cosine * (1.0 / pi)); // Apply Lambertian reflectance
         }
         else
         {
-            return Color3(0, 0, 0); // Absorbed
+            return emittedColor; // If no scattering, return emitted color
         }
     }
 
@@ -85,7 +87,9 @@ void renderRows(int startRow, int endRow, int imageWidth, int imageHeight, int s
 
 void renderMultithread(int imageWidth, int imageHeight, int samplesPerPixel,
                        const Camera& camera, const Object& world, std::atomic<int>& rowsCompleted, 
-                       std::vector<Color3>& frameBuffer, int threadCount = 8) {
+                       std::vector<Color3>& frameBuffer) {
+    unsigned int threadCount = std::thread::hardware_concurrency();
+    std::cout << "Rendering with " << threadCount << " threads...\n";                   
     std::vector<std::thread> threads;
     int rowsPerThread = imageHeight / threadCount;
 
@@ -114,30 +118,43 @@ int main()
         return 1; // Return error code
     }
 
-    Camera camera = Camera();
+    Camera camera = Camera(
+        Point3(0, 15, 15), // Camera high above the scene
+        Point3(0, 0, -1.5), // Looking towards the center of the scene
+        512, 1.0 // Aspect ratio of 1.0 for square image
+    );
 
     outFile << "P3\n"
             << imageWidth << " " << imageHeight << "\n255\n";
 
     // Create materials of diffuse and reflective types
-    const Material *diffuse = new PureDiffuse(Color3(0.2, 0.9, 0.9)); // light cyan color
-    const Material *mirror = new Reflective(Color3(0.2, 0.2, 0.4)); // dark blue color
-    const Material *glossy = new Glossy(Color3(0.8, 0.6, 0.2), 0.5); // glossy yellow color
+    const Material *greenMirror = new Reflective(Color3(0.3, 0.8, 0.3)); // green color
+    const Material *glossy = new Glossy(Color3(0.9, 0.9, 0.9), 0.5); // glossy white color
     const Material *redDiffuse = new PureDiffuse(Color3(0.8, 0.2, 0.2)); // red color
+    const Material *whiteMirror = new Reflective(Color3(0.9, 0.9, 0.9)); // white color
+    const Material *goldGlossy = new Glossy(Color3(1.0, 0.84, 0.0), 0.1); // gold color with slight glossiness
+    const Material *cyanEmissive = new Emissive(Color3(6.0, 6.0, 6.0)); // cyan emissive color
+
     // Create objects list for BVH tree
     std::vector<Object*> objects;
 
-    // Spheres
-    objects.push_back(new Sphere(Point3(0.0, 0, -1.0), 0.3, redDiffuse));
-    objects.push_back(new Sphere(Point3(1.0, 0.0, -1.5), 0.3, redDiffuse));
+    // Emissive sphere (light source)
+    objects.push_back(new Sphere(Point3(0.0, 5.0, -1.5), 0.3, cyanEmissive));
+
+    // Add spheres with different materials
+    objects.push_back(new Sphere(Point3(0.75, -0.2, -1.2), 0.3, redDiffuse));
+    objects.push_back(new Sphere(Point3(-0.75, -0.2, -1.2), 0.3, glossy));
+    objects.push_back(new Sphere(Point3(-0.75, -0.2, -2.0), 0.3, goldGlossy));
+    objects.push_back(new Sphere(Point3(0.75, -0.2, -2.0), 0.3, whiteMirror));
+
     // Ground plane
-    objects.push_back(new Plane(Point3(0, -0.5, 0), mirror));
+    objects.push_back(new Plane(Point3(0, -0.5, 0), greenMirror));
 
     // Build BVH from objects
     Object* world = new BVHNode(objects, 0, objects.size());
 
     // Render the scene
-    int samplesPerPixel = 100; // Number of samples per pixel
+    int samplesPerPixel = 200; // Number of samples per pixel
 
     // Multithread rendering
     std::vector<Color3> frameBuffer(imageWidth * imageHeight);
@@ -153,7 +170,6 @@ int main()
             Color3 color = frameBuffer[j * imageWidth + i];
             outFile << color.r() << ' ' << color.g() << ' ' << color.b() << '\n';
         }
-        updateProgressBar(j, imageHeight);
     }
     outFile.close();
 
