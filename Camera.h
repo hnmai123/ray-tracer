@@ -30,7 +30,7 @@ public:
 
     }
 
-    Ray getRay(double x, double y) {
+    Ray getRay(double x, double y) const {
         return Ray(cameraCentre_, (pixel00_ + (horizontalStep_ * x) + (verticalStep_ * y)) - cameraCentre_);
     }
 private:

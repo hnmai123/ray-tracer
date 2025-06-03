@@ -10,7 +10,7 @@ class BVHNode : public Object
 public:
     BVHNode(std::vector<Object *> &objects, size_t start, size_t end)
     {
-        int axis = randomInt(0, 2); // Randomly choose an axis (0, 1, or 2)
+        int axis = 0;
         auto comparator = [axis](Object *objectA, Object *objectB)
         {
             return objectA->boundingBox().min()[axis] < objectB->boundingBox().min()[axis];
@@ -36,10 +36,11 @@ public:
         }
         else
         {
-            std::sort(objects.begin() + start, objects.begin() + end, comparator);
+            std::vector<Object*> sortedObjects(objects.begin() + start, objects.begin() + end);
+            std::sort(sortedObjects.begin(), sortedObjects.end(), comparator);
             size_t mid = start + objectSpan / 2;
-            left_ = new BVHNode(objects, start, mid);
-            right_ = new BVHNode(objects, mid, end);
+            left_ = new BVHNode(objects, 0, mid);
+            right_ = new BVHNode(objects, mid, sortedObjects.size());
         }
         box_ = surroundingBox(left_->boundingBox(), right_->boundingBox());
     };

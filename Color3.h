@@ -45,6 +45,14 @@ public:
                 (colorVec_.z() + other.colorVec_.z())};
     }
 
+    Color3 operator+=(const Color3 &other)
+    {
+        colorVec_[0] += other.colorVec_[0];
+        colorVec_[1] += other.colorVec_[1];
+        colorVec_[2] += other.colorVec_[2];
+        return *this;
+    }
+
     Color3 correctedAverage(int samplesPerPixel) {
         double scale = 1.0 / samplesPerPixel;
         return {

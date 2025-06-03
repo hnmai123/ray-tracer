@@ -7,6 +7,8 @@
 #include "Scene.h"
 #include "Material.h"
 #include "BVHNode.h"
+#include <thread>
+#include <atomic>
 
 void updateProgressBar(int rowsDone, int imageHeight)
 {
@@ -27,7 +29,7 @@ void updateProgressBar(int rowsDone, int imageHeight)
     std::cout << "] " << percentage << "% \r" << std::flush;
 }
 
-Color3 rayColor(const Ray &ray, const Object &world, int depth = 5)
+Color3 rayColor(const Ray &ray, const Object &world, int depth = 10)
 {
     if (depth <= 0)
     {
@@ -42,8 +44,8 @@ Color3 rayColor(const Ray &ray, const Object &world, int depth = 5)
 
         if (auto reflected = material->scatter(ray, rec))
         {
-            Color3 incoming = rayColor(*reflected, world, depth - 1);
-            return material->color() * incoming;
+            Color3 attenuation = material->color();
+            return attenuation * rayColor(*reflected, world, depth - 1);
         }
         else
         {
@@ -58,6 +60,43 @@ Color3 rayColor(const Ray &ray, const Object &world, int depth = 5)
     Color3 skyTopColor = Color3(0.5, 0.7, 1.0);    // Light blue at top
 
     return skyBottomColor * (1.0 - verticalBlendFactor) + skyTopColor * verticalBlendFactor;
+}
+
+void renderRows(int startRow, int endRow, int imageWidth, int imageHeight, int samplesPerPixel,
+                const Camera& camera, const Object& world, std::vector<Color3>& frameBuffer, std::atomic<int>& rowsCompleted) {
+    for (int j = startRow; j < endRow; j++) {
+        for (int i = 0; i < imageWidth; i++) {
+            Color3 pixelColor;
+            for (int sample = 0; sample < samplesPerPixel; sample++) {
+                // Get a ray for the current pixel
+                auto ray = camera.getRay(i + randomDouble0to1(), j + randomDouble0to1());
+
+                // Accumulate color from the ray
+                pixelColor +=  rayColor(ray, world, 10);
+            }
+
+            Color3 finalColor = pixelColor.correctedAverage(samplesPerPixel); // Average color for the pixel
+            frameBuffer[j * imageWidth + i] = finalColor;
+        }
+        int done = ++rowsCompleted;
+        updateProgressBar(done, imageHeight);
+    }
+}
+
+void renderMultithread(int imageWidth, int imageHeight, int samplesPerPixel,
+                       const Camera& camera, const Object& world, std::atomic<int>& rowsCompleted, 
+                       std::vector<Color3>& frameBuffer, int threadCount = 8) {
+    std::vector<std::thread> threads;
+    int rowsPerThread = imageHeight / threadCount;
+
+    for (int t = 0; t < threadCount; ++t) {
+        int startRow = t * rowsPerThread;
+        int endRow = (t == threadCount - 1) ? imageHeight : startRow + rowsPerThread;
+        threads.emplace_back(renderRows, startRow, endRow, imageWidth, imageHeight, samplesPerPixel,
+                             std::ref(camera), std::ref(world), std::ref(frameBuffer), std::ref(rowsCompleted));
+    }
+
+    for (auto& thread : threads) thread.join();
 }
 
 int main()
@@ -84,13 +123,13 @@ int main()
     const Material *diffuse = new PureDiffuse(Color3(0.2, 0.9, 0.9)); // light cyan color
     const Material *mirror = new Reflective(Color3(0.2, 0.2, 0.4)); // dark blue color
     const Material *glossy = new Glossy(Color3(0.8, 0.6, 0.2), 0.5); // glossy yellow color
-    
+    const Material *redDiffuse = new PureDiffuse(Color3(0.8, 0.2, 0.2)); // red color
     // Create objects list for BVH tree
     std::vector<Object*> objects;
 
     // Spheres
-    objects.push_back(new Sphere(Point3(0.0, 0, -1.0), 0.5, glossy));    // Glossy center
-    
+    objects.push_back(new Sphere(Point3(0.0, 0, -1.0), 0.3, redDiffuse));
+    objects.push_back(new Sphere(Point3(1.0, 0.0, -1.5), 0.3, redDiffuse));
     // Ground plane
     objects.push_back(new Plane(Point3(0, -0.5, 0), mirror));
 
@@ -98,29 +137,24 @@ int main()
     Object* world = new BVHNode(objects, 0, objects.size());
 
     // Render the scene
-    int samplesPerPixel = 500; // Number of samples per pixel
+    int samplesPerPixel = 100; // Number of samples per pixel
 
+    // Multithread rendering
+    std::vector<Color3> frameBuffer(imageWidth * imageHeight);
+    std::atomic<int> rowsCompleted = 0;
+
+    renderMultithread(imageWidth, imageHeight, samplesPerPixel, camera, *world, rowsCompleted, frameBuffer);
+
+    // Write the frame buffer to the output file
     for (int j = 0; j < imageHeight; j++)
     {
         for (int i = 0; i < imageWidth; i++)
         {
-            Color3 pixelColor;
-            for (int sample = 0; sample < samplesPerPixel; sample++)
-            {
-                // Get a ray for the current pixel
-                auto ray = camera.getRay(i + randomDouble0to1(), j + randomDouble0to1());
-
-                // Accumulate color from the ray
-                pixelColor = pixelColor + rayColor(ray, *world, 10);
-            }
-
-            Color3 finalColor = pixelColor.correctedAverage(samplesPerPixel); // Average color for the pixel
-
-            outFile << finalColor.r() << ' ' << finalColor.g() << ' ' << finalColor.b() << '\n';
+            Color3 color = frameBuffer[j * imageWidth + i];
+            outFile << color.r() << ' ' << color.g() << ' ' << color.b() << '\n';
         }
         updateProgressBar(j, imageHeight);
     }
-
     outFile.close();
 
     return 0;
