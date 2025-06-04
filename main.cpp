@@ -166,10 +166,11 @@ int main()
     const Material *greenDiffuse = new Reflective(Color3(0.3, 0.8, 0.3));  // green color
     const Material *greenGlossy = new Glossy(Color3(0.2, 0.8, 0.2), 0.1); // glossy green color
     const Material *redDiffuse = new PureDiffuse(Color3(0.8, 0.2, 0.2));  // red color
-    const Material *whiteMirror = new Reflective(Color3(0.9, 0.9, 0.9));  // white color
+    const Material *pinkMirror = new Reflective(Color3(1, 0.6, 0.8));  // pink color
     const Material *goldGlossy = new Glossy(Color3(1.0, 0.84, 0.0), 0.1); // gold color with slight glossiness
     const Material *sunEmissive = new Emissive(Color3(1.0, 0.95, 0.6));   // sun color (light source)
     const Material* caroChecker = new Checker(Color3(0.4, 0.2, 0.1), Color3(0.8, 0.6, 0.3), 10.0);;  // Caro checker
+    const Material *glass = new Dialectric(1.5); // Glass material with refractive index of 1.5
 
     // Create objects list for BVH tree
     std::vector<Object *> objects;
@@ -180,9 +181,9 @@ int main()
 
     // Add spheres with different materials
     objects.push_back(new Sphere(Point3(-0.5, -0.2, -1.3), 0.3, redDiffuse)); // 1x1
-    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.3), 0.3, greenGlossy)); // 1x2
+    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.3), 0.3, glass)); // 1x2
     objects.push_back(new Sphere(Point3(-0.5, -0.2, -1.7), 0.3, goldGlossy)); // 2x1
-    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.7), 0.3, whiteMirror)); // 2x2
+    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.7), 0.3, pinkMirror)); // 2x2
 
     // Ground plane
     objects.push_back(new Plane(Point3(0, -0.5, 0), caroChecker)); // Large ground plane

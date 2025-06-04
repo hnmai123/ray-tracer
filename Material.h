@@ -145,4 +145,46 @@ private:
     double scale_;
 };
 // -- Dielectric (Transparent) ---
+class Dialectric : public Material
+{
+public:
+    Dialectric(double refractiveIndex) : refractiveIndex_(refractiveIndex) {}
+    std::optional<Ray> scatter(const Ray &ray, const HitRecord &hitRecord) const override
+    {
+        double refractionRatio = hitRecord.frontFace() ? (1.0 / refractiveIndex_) : refractiveIndex_;
+
+        Vector3 unitDirection = ray.direction().unitVector();
+        double cosTheta = std::min((-unitDirection).dot(hitRecord.surfaceNormal()), 1.0);
+        double sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+
+        bool cannotRefract = refractionRatio * sinTheta > 1.0;
+        Vector3 scatterDirection;
+        if (cannotRefract || reflectance(cosTheta, refractionRatio) > randomDouble0to1())
+        {
+            // Reflect
+            scatterDirection = unitDirection.reflectionAboutNormalVector(hitRecord.surfaceNormal());
+        }
+        else
+        {
+            // Refract
+            scatterDirection = unitDirection.refractionAboutNormalVector(hitRecord.surfaceNormal(), refractionRatio);
+        }
+        return Ray(hitRecord.hitPoint(), scatterDirection);
+    }
+
+    Color3 color() const override
+    {
+        return Color3(1, 1, 1); // not used directly
+    }
+
+private:
+    double refractiveIndex_;
+    static double reflectance(double cosineTheta, double refractiveIndexRatio)
+    {
+        // Schlick's approximation for reflectance
+        double r0 = (1 - refractiveIndexRatio) / (1 + refractiveIndexRatio);
+        r0 *= r0;
+        return r0 + (1 - r0) * pow((1 - cosineTheta), 5);
+    }
+};
 #endif // RAYTRACER_MATERIAL_H
