@@ -68,7 +68,8 @@ public:
         Point3 maxPoint = centre_ + Vector3(radius_, radius_, radius_);
         return AABB(minPoint, maxPoint);
     }
-
+    Point3 centre() const { return centre_; }
+    const Material *material() const { return material_; }
 private:
     Point3 centre_{0.0, 0.0, -1.0};
     double radius_{0.5};

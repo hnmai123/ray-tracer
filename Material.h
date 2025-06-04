@@ -108,5 +108,41 @@ private:
     Color3 emittedColor_;
 };
 
+// --- Checker (Simple Checker) --- (Caro)
+class Checker : public Material
+{
+public:
+    Checker(Color3 color1, Color3 color2, double scale = 1.0)
+        : color1_(color1), color2_(color2), scale_(scale) {}
+
+    std::optional<Ray> scatter(const Ray &ray, const HitRecord &rec) const override
+    {
+        Vector3 scatterDir = rec.surfaceNormal() + Vector3::randomUnitVector();
+        if (scatterDir.nearZero())
+            scatterDir = rec.surfaceNormal();
+        return Ray(rec.hitPoint(), scatterDir);
+    }
+
+    Color3 color() const override
+    {
+        return Color3(1, 1, 1); // not used directly
+    }
+
+    Color3 emittedColor() const override
+    {
+        return Color3(0, 0, 0);
+    }
+
+    Color3 checkerColorAt(const Point3 &p) const
+    {
+        // checker based on x and z only (for horizontal plane)
+        int check = static_cast<int>(floor(p.x() * scale_)) + static_cast<int>(floor(p.z() * scale_));
+        return (check % 2 == 0) ? color1_ : color2_;
+    }
+
+private:
+    Color3 color1_, color2_;
+    double scale_;
+};
 // -- Dielectric (Transparent) ---
 #endif // RAYTRACER_MATERIAL_H
