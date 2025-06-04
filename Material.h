@@ -145,10 +145,10 @@ private:
     double scale_;
 };
 // -- Dielectric (Transparent) ---
-class Dialectric : public Material
+class Dielectric : public Material
 {
 public:
-    Dialectric(double refractiveIndex) : refractiveIndex_(refractiveIndex) {}
+    Dielectric(double refractiveIndex) : refractiveIndex_(refractiveIndex) {}
     std::optional<Ray> scatter(const Ray &ray, const HitRecord &hitRecord) const override
     {
         double refractionRatio = hitRecord.frontFace() ? (1.0 / refractiveIndex_) : refractiveIndex_;

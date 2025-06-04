@@ -1,7 +1,3 @@
-//
-// Created by Richard Skarbez on 5/7/24.
-//
-
 #ifndef RAYTRACER_VECTOR3_H
 #define RAYTRACER_VECTOR3_H
 

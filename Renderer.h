@@ -1,7 +1,3 @@
-//
-// Created by Richard Skarbez on 5/8/24.
-//
-
 #ifndef RAYTRACER_RENDERER_H
 #define RAYTRACER_RENDERER_H
 

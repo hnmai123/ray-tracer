@@ -1,7 +1,3 @@
-//
-// Created by Richard Skarbez on 5/8/24.
-//
-
 #ifndef RAYTRACER_COLOR3_H
 #define RAYTRACER_COLOR3_H
 
@@ -25,12 +21,10 @@ public:
 
     Color3 operator*(const Color3 &other) const
     {
-        return
-        {
+        return {
             (colorVec_.x() * other.colorVec_.x()),
-                (colorVec_.y() * other.colorVec_.y()),
-                (colorVec_.z() * other.colorVec_.z())
-        };
+            (colorVec_.y() * other.colorVec_.y()),
+            (colorVec_.z() * other.colorVec_.z())};
     }
 
     friend Color3 operator*(double scale, Color3 &vector)
@@ -53,13 +47,21 @@ public:
         return *this;
     }
 
-    Color3 correctedAverage(int samplesPerPixel) {
+    Color3 correctedAverage(int samplesPerPixel)
+    {
         double scale = 1.0 / samplesPerPixel;
         return {
-            sqrt(scale * colorVec_.x()), 
-            sqrt(scale * colorVec_.y()), 
-            sqrt(scale * colorVec_.z())
-        };
+            sqrt(scale * colorVec_.x()),
+            sqrt(scale * colorVec_.y()),
+            sqrt(scale * colorVec_.z())};
+    }
+
+    Color3 &operator/=(double scale)
+    {
+        colorVec_[0] /= scale;
+        colorVec_[1] /= scale;
+        colorVec_[2] /= scale;
+        return *this;
     }
 
 private:

@@ -7,7 +7,8 @@
 
 class Material; // Forward declaration
 
-class HitRecord {
+class HitRecord
+{
 public:
     Point3 hitPoint() const { return hitPoint_; }
     Vector3 surfaceNormal() const { return surfaceNormal_; }
@@ -18,7 +19,11 @@ public:
     void setHitPoint(const Point3 &p) { hitPoint_ = p; }
     void setSurfaceNormal(const Vector3 &n) { surfaceNormal_ = n; }
     void setDistanceAlongRay(double t) { distanceAlongRay_ = t; }
-    void setFrontFace(bool f) { frontFace_ = f; }
+    void setFrontFace(const Vector3 &rayDirection, const Vector3 &outwardNormal)
+    {
+        frontFace_ = rayDirection.dot(outwardNormal) < 0;
+        surfaceNormal_ = frontFace_ ? outwardNormal : -outwardNormal;
+    }
     void setSurfaceMaterial(const Material *m) { surfaceMaterial_ = m; }
 
 private:

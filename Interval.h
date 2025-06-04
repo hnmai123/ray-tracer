@@ -1,7 +1,3 @@
-//
-// Created by Richard Skarbez on 5/8/24.
-//
-
 #ifndef RAYTRACER_INTERVAL_H
 #define RAYTRACER_INTERVAL_H
 

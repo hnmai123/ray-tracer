@@ -1,7 +1,3 @@
-//
-// Created by Richard Skarbez on 5/8/24.
-//
-
 #ifndef RAYTRACER_SCENE_H
 #define RAYTRACER_SCENE_H
 
@@ -58,7 +54,7 @@ public:
         rec.setHitPoint(hitPoint);
         rec.setSurfaceNormal(normalAtHit);
         rec.setDistanceAlongRay(hitDistance);
-        rec.setFrontFace(ray.direction().dot(normalAtHit) < 0); // front face if ray direction and normal are in opposite directions
+        rec.setFrontFace(ray.direction(), normalAtHit); // front face if ray direction and normal are in opposite directions
         rec.setSurfaceMaterial(material_);                      // Set the material of the sphere
         return rec;
     }
@@ -70,6 +66,12 @@ public:
     }
     Point3 centre() const { return centre_; }
     const Material *material() const { return material_; }
+
+    // Generate a random point on the surface of the sphere
+    Point3 randomPointOnSurface() const {
+        Vector3 randomDirection = Vector3::randomUnitVector(); // Generate a random unit vector
+        return centre_ + (randomDirection * radius_); // Scale it by the radius and translate to the sphere's center
+    }
 private:
     Point3 centre_{0.0, 0.0, -1.0};
     double radius_{0.5};
@@ -98,7 +100,7 @@ public:
         rec.setHitPoint(hitPoint);
         rec.setSurfaceNormal(planeNormal_);
         rec.setDistanceAlongRay(distanceToPlane);
-        rec.setFrontFace(ray.direction().dot(planeNormal_) < 0); // front face if ray direction and normal are in opposite directions
+        rec.setFrontFace(ray.direction(), planeNormal_); // front face if ray direction and normal are in opposite directions
         rec.setSurfaceMaterial(material_);                       // Set the material of the plane
         return rec;
     }

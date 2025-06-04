@@ -57,25 +57,29 @@ Color3 rayColor(const Ray &ray, const Object &world, int depth = 10, const Spher
             double cosine = std::max(0.0, rec.surfaceNormal().dot(reflected->direction().unitVector()));
             indirectLight = baseColor * incoming * (cosine * (1.0 / pi)); // Apply Lambertian reflectance
         }
-        
+
         // Calculate direct light contribution if a light source is provided
         Color3 directLight = Color3(0, 0, 0);
         if (lightSource != nullptr)
         {
-            Vector3 lightDirection = (lightSource->centre() - rec.hitPoint()).unitVector();
-            Ray shadowRay(rec.hitPoint(), lightDirection);
-
-            double lightDistance = (lightSource->centre() - rec.hitPoint()).length();
-            bool inShadow = world.rayHit(shadowRay, Interval(0.01, lightDistance - 0.01)).has_value();
-
-            if (!inShadow)
+            int lightSamples = 10; // Number of samples for direct light
+            for (int i = 0; i < lightSamples; ++i)
             {
-                // If not in shadow, add direct light contribution
-                double cosine = std::max(0.0, rec.surfaceNormal().dot(lightDirection));
-                double attenuation = 1.0 / (lightDistance * lightDistance); // Simple attenuation
-                Color3 lightIntensity = lightSource->material()->emittedColor() * attenuation * cosine;
-                directLight = baseColor * lightIntensity; // Direct light contribution
+                Point3 lightSamplePoint = lightSource->randomPointOnSurface(); // Sample a point on the light source
+                Vector3 lightDirection = (lightSamplePoint - rec.hitPoint()).unitVector();
+                double lightDistance = (lightSamplePoint - rec.hitPoint()).length();
+                Ray shadowRay(rec.hitPoint(), lightDirection);
+                bool inShadow = world.rayHit(shadowRay, Interval(0.01, lightDistance - 0.01)).has_value();
+                if (!inShadow)
+                {
+                    // If not in shadow, add direct light contribution
+                    double cosine = std::max(0.0, rec.surfaceNormal().dot(lightDirection));
+                    double attenuation = 1.0 / (lightDistance * lightDistance); // Simple attenuation
+                    Color3 lightIntensity = lightSource->material()->emittedColor() * attenuation * cosine;
+                    directLight += baseColor * lightIntensity; // Direct light contribution
+                }
             }
+            directLight /= static_cast<double>(lightSamples); // Average direct light contribution
         }
         return emittedColor + indirectLight + directLight; // Combine emitted, indirect, and direct light contributions
     }
@@ -91,7 +95,7 @@ Color3 rayColor(const Ray &ray, const Object &world, int depth = 10, const Spher
 }
 
 void renderRows(int startRow, int endRow, int imageWidth, int imageHeight, int samplesPerPixel,
-                const Camera &camera, const Object &world, std::vector<Color3> &frameBuffer, 
+                const Camera &camera, const Object &world, std::vector<Color3> &frameBuffer,
                 std::atomic<int> &rowsCompleted, const Sphere *lightSource)
 {
     for (int j = startRow; j < endRow; j++)
@@ -130,7 +134,7 @@ void renderMultithread(int imageWidth, int imageHeight, int samplesPerPixel,
         int startRow = t * rowsPerThread;
         int endRow = (t == threadCount - 1) ? imageHeight : startRow + rowsPerThread;
         threads.emplace_back(renderRows, startRow, endRow, imageWidth, imageHeight, samplesPerPixel,
-                             std::ref(camera), std::ref(world), std::ref(frameBuffer), 
+                             std::ref(camera), std::ref(world), std::ref(frameBuffer),
                              std::ref(rowsCompleted), lightSource);
     }
 
@@ -163,31 +167,32 @@ int main()
             << imageWidth << " " << imageHeight << "\n255\n";
 
     // Create materials of diffuse and reflective types
-    const Material *greenDiffuse = new Reflective(Color3(0.3, 0.8, 0.3));  // green color
+    const Material *greenDiffuse = new Reflective(Color3(0.3, 0.8, 0.3)); // green color
     const Material *greenGlossy = new Glossy(Color3(0.2, 0.8, 0.2), 0.1); // glossy green color
     const Material *redDiffuse = new PureDiffuse(Color3(0.8, 0.2, 0.2));  // red color
-    const Material *pinkMirror = new Reflective(Color3(1, 0.6, 0.8));  // pink color
+    const Material *pinkMirror = new Reflective(Color3(1, 0.6, 0.8));     // pink color
     const Material *goldGlossy = new Glossy(Color3(1.0, 0.84, 0.0), 0.1); // gold color with slight glossiness
-    const Material *sunEmissive = new Emissive(Color3(1.0, 0.95, 0.6));   // sun color (light source)
-    const Material* caroChecker = new Checker(Color3(0.4, 0.2, 0.1), Color3(0.8, 0.6, 0.3), 10.0);;  // Caro checker
-    const Material *glass = new Dialectric(1.5); // Glass material with refractive index of 1.5
+    const Material *sunEmissive = new Emissive(Color3(0.8, 0.76, 0.48));   // sun color (light source)
+    const Material *caroChecker = new Checker(Color3(0.4, 0.2, 0.1), Color3(0.8, 0.6, 0.3), 10.0);
+    ;                                            // Caro checker
+    const Material *glass = new Dielectric(1.5); // Glass material with refractive index of 1.5
 
     // Create objects list for BVH tree
     std::vector<Object *> objects;
 
     // Emissive sphere (light source)
-    Sphere* lightSphere = new Sphere(Point3(0.0, 0.2, -1.5), 0.3, sunEmissive); // Light source sphere
-    objects.push_back(lightSphere); 
+    Sphere *lightSphere = new Sphere(Point3(0.0, 0.7, -1.5), 0.1, sunEmissive); // Light source sphere
+    objects.push_back(lightSphere);
 
     // Add spheres with different materials
     objects.push_back(new Sphere(Point3(-0.5, -0.2, -1.3), 0.3, redDiffuse)); // 1x1
-    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.3), 0.3, glass)); // 1x2
+    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.3), 0.3, glass));       // 1x2
     objects.push_back(new Sphere(Point3(-0.5, -0.2, -1.7), 0.3, goldGlossy)); // 2x1
-    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.7), 0.3, pinkMirror)); // 2x2
+    objects.push_back(new Sphere(Point3(0.5, -0.2, -1.7), 0.3, pinkMirror));  // 2x2
 
     // Ground plane
     objects.push_back(new Plane(Point3(0, -0.5, 0), caroChecker)); // Large ground plane
-    
+
     // Build BVH from objects
     Object *world = new BVHNode(objects, 0, objects.size());
 
