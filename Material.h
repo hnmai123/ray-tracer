@@ -25,7 +25,7 @@ class PureDiffuse : public Material
 public:
     PureDiffuse(Color3 color) : albedo_(color) {}
 
-    inline std::optional<Ray> scatter(const Ray &ray, const HitRecord &hitRecord) const override
+    inline std::optional<Ray> scatter(const Ray &, const HitRecord &hitRecord) const override
     {
         Vector3 scatterDirection = hitRecord.surfaceNormal() + Vector3::randomUnitVector();
         if (scatterDirection.nearZero())
@@ -91,7 +91,7 @@ class Emissive : public Material
 {
 public:
     Emissive(Color3 color) : emittedColor_(color) {}
-    inline std::optional<Ray> scatter(const Ray &ray, const HitRecord &hitRecord) const override
+    inline std::optional<Ray> scatter(const Ray &, const HitRecord &) const override
     {
         return std::nullopt; // Emissive materials do not scatter rays
     }
@@ -115,7 +115,7 @@ public:
     Checker(Color3 color1, Color3 color2, double scale = 1.0)
         : color1_(color1), color2_(color2), scale_(scale) {}
 
-    std::optional<Ray> scatter(const Ray &ray, const HitRecord &rec) const override
+    std::optional<Ray> scatter(const Ray &, const HitRecord &rec) const override
     {
         Vector3 scatterDir = rec.surfaceNormal() + Vector3::randomUnitVector();
         if (scatterDir.nearZero())
