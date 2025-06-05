@@ -1,7 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "BVHNode.h"
-#include "RenderUtils.h"
+#include "Renderer.h"
 
 int main()
 {
@@ -19,7 +19,7 @@ int main()
     }
 
     Camera camera = Camera(
-        Point3(0, 0.5, 2.0),
+        Point3(0, 4, 10),
         Point3(0, 0, -1.5),
         512, 1.0);
 
@@ -34,7 +34,7 @@ int main()
     const Material *goldGlossy = new Glossy(Color3(1.0, 0.84, 0.0), 0.5);                          // gold color with slight glossiness
     const Material *sunEmissive = new Emissive(Color3(0.9, 0.84, 0.48));                           // sun color (light source)
     const Material *caroChecker = new Checker(Color3(0.4, 0.2, 0.1), Color3(0.8, 0.6, 0.3), 10.0); // Caro checker
-    const Material *dielectric = new Dielectric(1.0002);                                           // Very low refractive index for the dielectric sphere
+    const Material *dielectric = new Dielectric(1.33);                                             // Glass-like material with refractive index of water
 
     // Create objects list for BVH tree
     std::vector<Object *> objects;
@@ -55,25 +55,15 @@ int main()
     // Build BVH from objects
     Object *world = new BVHNode(objects, 0, objects.size());
 
-    // Render the scene
-    int samplesPerPixel = 100; // Number of samples per pixel
+    // Setup rendering parameters
+    RendererParameters params = RendererParameters::defaultParameters();
+    params.imageWidth_ = imageWidth;
+    params.imageHeight_ = imageHeight;
+    params.samplesPerPixel_ = 10;
 
-    // Multithread rendering
-    std::vector<Color3> frameBuffer(imageWidth * imageHeight);
-    std::atomic<int> rowsCompleted = 0;
-
-    renderMultithread(imageWidth, imageHeight, samplesPerPixel, camera, *world, rowsCompleted, frameBuffer, lightSphere);
-
-    // Write the frame buffer to the output file
-    for (int j = 0; j < imageHeight; j++)
-    {
-        for (int i = 0; i < imageWidth; i++)
-        {
-            Color3 color = frameBuffer[j * imageWidth + i];
-            outFile << color.r() << ' ' << color.g() << ' ' << color.b() << '\n';
-        }
-    }
-    outFile.close();
+    // Render
+    Renderer renderer(camera, params);
+    renderer.render(*world, lightSphere);
 
     return 0;
 }
