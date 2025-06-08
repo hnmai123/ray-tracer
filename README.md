@@ -37,11 +37,15 @@ and performance optimizations like bounding volume hierarchies and multithreadin
 
 ## 📐 UML Class Diagram
 
-
-
-Key components:
-
-
+![UML_RayTracer drawio](https://github.com/user-attachments/assets/8965d7e8-b8c4-4ab7-a4f3-fffb35560d24)<br>
+The project follows a clean object-oriented design, modeled through a comprehensive UML class diagram. Key components include:
+- `Object` is an abstract base class implemented by `Sphere`, `Plane`, `Scene`, and `BVHNode`.
+- `Material` is an abstract class with subclasses like `PureDiffuse`, `Reflective`, `Glossy`, `Dielectric`, `Checker`, and `Emissive`, applying the Strategy Pattern.
+- `MaterialFactory` applies the Factory Pattern to centralize material creation.
+- `Renderer` manages the ray tracing loop and uses multithreading to render efficiently.
+- `Camera` generates rays per pixel; `Ray`, `Interval`, and `HitRecord` are utility classes involved in intersection and shading.
+- The UML includes associations, dependencies, generalizations, and clear visibility (`+` public, `-` private) on attributes and methods.
+  
 ---
 
 ## ⚙️ How to Build and Run
