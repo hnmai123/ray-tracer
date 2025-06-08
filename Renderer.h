@@ -96,14 +96,14 @@ private:
             return emittedColor + indirectLight + directLight; // Combine emitted, indirect, and direct light contributions
         }
 
-        // // Background gradient
-        // auto unitDirection = ray.direction().unitVector();
-        // auto verticalBlendFactor = 0.5 * (unitDirection.y() + 1.0);
-        // Color3 skyTopColor = Color3(0.2, 0.5, 0.95);     // Strong at top
-        // Color3 skyBottomColor = Color3(0.85, 0.95, 1.0); // Light at bottom
+        // Background gradient
+        auto unitDirection = ray.direction().unitVector();
+        auto verticalBlendFactor = 0.5 * (unitDirection.y() + 1.0);
+        Color3 skyTopColor = Color3(0.2, 0.5, 0.95);     // Strong at top
+        Color3 skyBottomColor = Color3(0.85, 0.95, 1.0); // Light at bottom
 
-        // return skyBottomColor * (1.0 - verticalBlendFactor) + skyTopColor * verticalBlendFactor;
-        return Color3(0, 0, 0); // Night sky background
+        return skyBottomColor * (1.0 - verticalBlendFactor) + skyTopColor * verticalBlendFactor;
+        // return Color3(0, 0, 0); // Night sky background
     }
 
     void updateProgressBar(int rowsDone)
