@@ -89,6 +89,19 @@ cmake .. -G "MinGW Makefiles"
 mingw32-make
 .\raytracer.exe
 ```
+## 📸 Sample Output
+<img src="https://github.com/user-attachments/assets/44954946-ae4d-4530-997f-7076ec270ec9" width="500"/>
+<img src="https://github.com/user-attachments/assets/d624a58b-eff6-464a-a2e0-562e0c5e2396" width="500"/>
+<img src="https://github.com/user-attachments/assets/6e12c3be-9703-4294-8fe3-2495c08bbd5e" width="500"/>
+<img src="https://github.com/user-attachments/assets/25b1e574-f381-439f-a167-730b541d2813" width="500"/>
+<img src="https://github.com/user-attachments/assets/f6590245-eaf6-4c22-86c4-abc17e677f7a" width="500"/>
+<img src="https://github.com/user-attachments/assets/e3be4141-6c9c-4452-a381-247b6c7baa46" width="500"/>
+<img src="https://github.com/user-attachments/assets/711e11a7-bd9a-4666-a1f1-8f216a3b664c" width="500"/>
+<img src="https://github.com/user-attachments/assets/cf1a4233-674e-46e5-a760-51d17f7e735c" width="500"/>
+<img src="https://github.com/user-attachments/assets/ed8895f6-2c7b-4fd5-83bb-9c7407f359b8" width="500"/>
+<img src="https://github.com/user-attachments/assets/84fe8921-4d99-4eb0-aef3-e5cf58ec6767" width="500"/>
+
+
 
 
 
